@@ -8,3 +8,11 @@ Verified October 11, 2026 using the Linux x86-64 Docker image (Ubuntu 20.04, Cla
 - The published source is secret-scanned before publication.
 
 These checks confirm buildability and basic operation. They are not exhaustive validation of scheduling fairness, filesystem corruption handling, stress behavior, signal races or memory safety. No kernel, scheduler or filesystem implementation was rewritten for publication.
+
+## Continuous integration
+
+[GitHub Actions](https://github.com/Jaiashar/penn-os/actions/workflows/ci.yml) rebuilds the container and executes `python3 tests/smoke.py` on pushes to `main`, pull requests, and manual runs. The job has read-only repository permission, an immutable checkout-action reference, and a ten-minute timeout. Runtime tests have no network access and require neither secrets nor external services.
+
+The assertions cover a 4 KiB binary round trip through PennFAT across unmount/remount, file listing, OS startup, actual echo output, process-table content, a background job, scheduler-log creation, and clean logout.
+
+A passing badge establishes these checks only. It does not imply exhaustive correctness, memory-safety verification, or a production operating system.

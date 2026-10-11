@@ -1,5 +1,7 @@
 # PennOS
 
+[![Build and smoke tests](https://github.com/Jaiashar/penn-os/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Jaiashar/penn-os/actions/workflows/ci.yml)
+
 **A Unix-like operating system written in C: preemptive scheduling, process management, a shell, and a FAT-style filesystem.**
 
 I built PennOS as part of a Penn CIS 548 team project. It brings the core pieces of an operating system together: deciding which process runs, switching execution contexts, tracking process state, handling signals, and persisting files. The instructional OS runs in a Linux userspace process using `ucontext` and timer signals.
@@ -105,6 +107,16 @@ For a native Linux x86-64 build, install Clang, Make, the C development headers 
 This is a historical team project from Spring 2021. Jai Ashar contributed to the original project; the repository's recorded authors also include Dominick C. Pastore, Nathan Korzekwa, Mytreyi Narayanaswamy and Prateek. Course-provided code and existing author notices remain attributed. This showcase presents the integrated team implementation.
 
 The snapshot uses the `prepare-for-submission` branch, which contains the integrated shell, kernel and PennFAT source; the original default branch only held initial files. See [PROVENANCE.md](PROVENANCE.md) for the exact revision and publication changes.
+
+## Automated verification
+
+The badge above reports the latest `main` push run. [The workflow](.github/workflows/ci.yml) builds the original C source in the Linux x86-64 container and runs [assertion-based smoke tests](tests/smoke.py) against the executables. Tests use a real pseudo-terminal with input echo disabled, so echoed commands cannot be mistaken for program output. Each run uses temporary files, bounded waits, and no network access inside the test container.
+
+Run the same checks locally after building the image:
+
+```sh
+docker run --rm --network none --pids-limit 256 penn-os python3 tests/smoke.py
+```
 
 ## Validation
 

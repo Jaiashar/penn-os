@@ -2,3 +2,10 @@
 bin
 penn-shell
 *.log
+
+# Keep supplied parser objects, never reuse local compilation artifacts.
+**/*.o
+!parsejob.o
+!src/shell/parsejob.o
+**/__pycache__
+*.fat
