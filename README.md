@@ -31,6 +31,42 @@ flowchart TD
     G --> H[Filesystem image]
 ```
 
+## Process representation and scheduling
+
+Each process has a [process control block](src/kernel/process_state.h) with a PID, parent pointer, execution context, priority, state, child queues, open-file table, and sleep deadline. `exec_ctx` contains the saved stack and register context. Each process has a 16 KiB context stack and 32 file-reference slots in this implementation.
+
+The scheduler uses `setitimer(ITIMER_REAL)` with a 100,000 microsecond quantum. `SIGALRM` saves the current context with `swapcontext`; the scheduler selects the next process and restores it with `setcontext`. Priorities are `-1`, `0`, and `1`, with lower values receiving higher priority. When all three queues have work, the 19-entry rotation selects them 9, 6, and 4 times respectively. Separate rotations handle partially empty queues.
+
+```mermaid
+sequenceDiagram
+    participant P as Current process
+    participant T as Timer signal
+    participant S as Scheduler
+    participant Q as Priority queues
+    T->>P: SIGALRM
+    P->>S: Save context and switch
+    S->>S: Wake expired sleepers
+    S->>Q: Requeue eligible process and select next
+    Q-->>S: Runnable PCB or no work
+    S->>P: Restore selected context, or idle
+```
+
+`RUNNING` means schedulable in the internal state model, so it covers more than the process currently executing. `BLOCKED` processes wait for a resource or event, `STOPPED` processes await continuation, and `ZOMBIE` processes have terminated but await cleanup. Keeping state separate from queue membership is central to understanding [process operations](src/os/process.c) and [scheduler transitions](src/kernel/scheduler.c).
+
+## Filesystem representation
+
+PennFAT stores its filesystem inside a host file. The [mounted filesystem structure](src/pennfat/pennfat_fs.h) retains the host file descriptor, a memory-mapped array of 16-bit FAT entries, block size, and data-block count. File handles and directory metadata sit above the raw block operations.
+
+```mermaid
+flowchart LR
+    A[Process file-reference table] --> B[File handle and position]
+    B --> C[Directory metadata and first block]
+    C --> D[FAT chain of data blocks]
+    D --> E[Host filesystem image]
+```
+
+`raw_read` follows a block chain and can return a short read at its end. `raw_write` can allocate blocks and return a partial write when storage fills; its caller is responsible for file size and timestamp updates. This division makes the filesystem a useful place to study how low-level storage mechanics become file operations.
+
 ## Build and explore
 
 The supplied parser object targets Linux x86-64. Use the container on macOS or an ARM machine:
