@@ -4,6 +4,12 @@
 
 I built PennOS as part of a Penn CIS 548 team project. It brings the core pieces of an operating system together: deciding which process runs, switching execution contexts, tracking process state, handling signals, and persisting files. The instructional OS runs in a Linux userspace process using `ucontext` and timer signals.
 
+## How it works
+
+PennOS starts by mounting a filesystem image and creating the shell process. The shell invokes the OS process API to start and manage commands. A timer periodically transfers control to the scheduler, which selects a runnable process from its priority queues and restores that process's saved execution context.
+
+File operations follow a separate path through PennFAT: file handles and directory entries map reads and writes onto blocks in the filesystem image. A standalone PennFAT utility lets that storage layer be explored independently of the OS shell.
+
 ## Inside the OS
 
 | Subsystem | What it implements | Start reading |
@@ -46,7 +52,17 @@ At its prompt, enter `mkfs demo.fat 1 0`, then exit with Ctrl-D. Start the OS wi
 ./bin/penn-os demo.fat demo.log
 ```
 
-Try `echo hello`, `ps`, `sleep 2 &`, `jobs`, and `logout`. For a native Linux x86-64 build, install Clang, Make, the C development headers and Valgrind development headers, then run `make`.
+Try the following commands in the PennOS shell:
+
+| Command | What to observe |
+| --- | --- |
+| `echo hello` | A command runs through the OS shell and produces output |
+| `ps` | The current process list, including PID, parent PID, priority and state |
+| `sleep 2 &` | A process starts in the background |
+| `jobs` | The shell's background-job state; run promptly before the sleep completes |
+| `logout` | Exit the OS shell |
+
+For a native Linux x86-64 build, install Clang, Make, the C development headers and Valgrind development headers, then run `make`.
 
 ## Context and credit
 
